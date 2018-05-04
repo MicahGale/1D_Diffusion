@@ -29,7 +29,15 @@ int sumArray(const std::vector<int> &summee) {
  *
  *This vector can then be fed into the matrix builder functions.
  *
- *@param cellSpec, the material properties in each physical cell
+ *@param cellSpec, the material properties in each physical cell level 1-cell
+                    level 2- groups
+                    level 3 properties
+                        0-D
+                        1-Sigma_a
+                        2-Sigma_upscat
+                        3-Sigma_downscat
+                        4-chi
+                        5-nu-Sigma_f
  *@param cellThick the thickness in unit mesh cells for each spacial region above
  *@param delta     the thickness in cm of each mesh grid
  *
@@ -37,13 +45,35 @@ int sumArray(const std::vector<int> &summee) {
  *
  */
 
-std::vector<std::vector<double>> buildPropArray(
-        const std::vector<std::vector<double>> &cellSPec, 
-        const std::vector<int> &cellThick, 
-        double delta) {
-    int total;
+std::vector<std::vector<std::vector<double>>> buildPropArray(
+        const std::vector<std::vector<std::vector<double>>> &cellSpec, 
+        const std::vector<int> &cellThick) {
+    int total,groups,outI;
      
     total=sumArray(cellThick);
-    std::vector<std::vector<double>> ret(total,std::vector<double>(5)); //init the return vector
+    groups=cellSpec[0].size(); //get the number of groups being used
+    std::vector<std::vector<std::vector<double>>> ret
+        (total,std::vector<std::vector<double>>(groups,
+            std::vector<double>(6))); //init the return vector
 
-} 
+    outI=0;
+    for(int i =0; i<cellSpec.size(); i++) { //iterate over all cells
+        for(int j=0;j<cellThick[i];j++) { //count over all of the meshpoints in a cell
+            ret[outI]=cellSpec[i];  //copies in the material properties for that cell
+            outI++; //move onto the next mesh point
+        }
+    }
+    return ret;
+}
+
+/**
+ *
+ *
+ *
+ *
+ */
+
+std::vector<std::vector<double>> generateH (std::vector<
+        std::vector<std::vector<double>>> propArray, double delta) {
+
+}

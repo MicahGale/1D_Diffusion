@@ -67,13 +67,63 @@ std::vector<std::vector<std::vector<double>>> buildPropArray(
 }
 
 /**
+ * Creates the H matrix for solving H\phi=F\phi+S.
  *
+ * Assumes that fluxes are in order by group the space. So 1g1, 1g2, 2g1, ....
  *
- *
- *
+ * @param leftBound, the left boundary (0 side) condition. True= vacuum,
+ * false=reflective
+ * @param righBouund same but for the right side.
+ *@return the H matrix assumes first dimension is row. 
  */
 
 std::vector<std::vector<double>> generateH (std::vector<
-        std::vector<std::vector<double>>> propArray, double delta) {
+        std::vector<std::vector<double>>> propArray, double delta,
+        bool leftBound, bool rightBound) {
+    int cells, groupsi,cellTarget;
+    double DtildaMinus, DtildaPlus,sigmaRemoval;
 
+    cells=propArray.size(); //gets the number mesh cells
+    groups=propArray[0].size(); //gets the number of groups in model
+
+    std::vector<std::vector<double>> ret(groups*cells,std::vector<double>(
+                groups*cells,0)); //creates square return matrix
+
+    for(int i=0; i<cells; i++) { //iterate over all mesh cells
+        for(int j=0;j<groups;j++) { //iterate over all groups
+            if(i>0) { //if D-tilda-minus exists find it
+                DtildaMinus=2*propArray[i][j][0]*propArray[i-1][j][0]/
+                    delta*(propArray[i][j][0]+propArray[i-1][j][0]);
+            } else if(leftBound) { //if at vacuum boundary update the stufff
+                DtildaMinus=2*propArray[i][j][0]/(delta*(1+4*propArray[i][j][0]/delta));
+            } else {  //if at reflective boundary set it to 0
+                DtildaMinus=0;
+            }
+            if(i<cells-i) {//same for dTitldaPlus
+                DtildaPlus=2*propArray[i][j][0]*propArray[i+1][j][0]/
+                    delta*(propArray[i][j][0]+propArray[i+1][j][0]);
+            } else if (rightBound) { //if at right vacuum boundary
+                DtildaPlus=2*propArray[i][j][0]/(delta*(1+4*propArray[i][j][0]/delta));
+            } else { //if at reflective boundary
+                DtildaPlus=0;
+            }
+
+            cellTarget=groups*i+j; //finds where this cell and group lives in flux array
+           //
+            /******************Now to start filling the array*************/ 
+            //
+            if(i>0) { //fill in the left difusion
+                //same energy group 1 cell to the left though
+                ret[cellTarget][(i-1)*groups+j]= -DtildaMinus;
+            } 
+
+            if(i<cells -1 )  {// fill in the right difusion. 
+                ret[cellTarget][(i+1)*groups+j]= -DtildaPlus;
+            }
+            sigmaRemoval=propArray[i][j][1]+propArray[i][j][2]+propArray[i][j][3];
+
+            //fill in flux removal term
+            ret[cellTarget][cellTarget]=sigmaRemoval*delta+DtildaMinus+DtildaPlus;
+        }
+    }
 }

@@ -80,7 +80,7 @@ std::vector<std::vector<std::vector<double>>> buildPropArray(
 std::vector<std::vector<double>> generateH (std::vector<
         std::vector<std::vector<double>>> propArray, double delta,
         bool leftBound, bool rightBound) {
-    int cells, groupsi,cellTarget;
+    int cells, groups,cellTarget;
     double DtildaMinus, DtildaPlus,sigmaRemoval;
 
     cells=propArray.size(); //gets the number mesh cells

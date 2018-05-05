@@ -45,8 +45,8 @@ int sumArray(const std::vector<int> &summee) {
  *
  */
 
-std::vector<std::vector<std::vector<double>>> buildPropArray(
-        const std::vector<std::vector<std::vector<double>>> &cellSpec, 
+std::vector<std::vector<std::vector<double>>> 
+   buildPropArray(const std::vector<std::vector<std::vector<double>>> &cellSpec, 
         const std::vector<int> &cellThick) {
     int total,groups,outI;
      
@@ -77,9 +77,10 @@ std::vector<std::vector<std::vector<double>>> buildPropArray(
  *@return the H matrix assumes first dimension is row. 
  */
 
-std::vector<std::vector<double>> generateH (std::vector<
-        std::vector<std::vector<double>>> propArray, double delta,
-        bool leftBound, bool rightBound) {
+std::vector<std::vector<double>> 
+generateH (std::vector<std::vector<std::vector<double>>> propArray, 
+        double delta, bool leftBound, bool rightBound) {
+    
     int cells, groups,cellTarget;
     double DtildaMinus, DtildaPlus,sigmaRemoval;
 
@@ -88,7 +89,6 @@ std::vector<std::vector<double>> generateH (std::vector<
 
     std::vector<std::vector<double>> ret(groups*cells,std::vector<double>(
                 groups*cells,0)); //creates square return matrix
-
     for(int i=0; i<cells; i++) { //iterate over all mesh cells
         for(int j=0;j<groups;j++) { //iterate over all groups
             if(i>0) { //if D-tilda-minus exists find it
@@ -125,5 +125,64 @@ std::vector<std::vector<double>> generateH (std::vector<
             //fill in flux removal term
             ret[cellTarget][cellTarget]=sigmaRemoval*delta+DtildaMinus+DtildaPlus;
         }
+    }
+    return ret;
+}
+/**
+ *Generates the fission, F, matrix.
+ *
+ *Nearly identical params and return values as generateH().
+ *
+ */
+
+std::vector<std::vector<double>> 
+	generateF(std::vector<std::vector<std::vector<double>>> propArray, double delta) {
+    
+    int cells, groups,cellTarget;
+    double DtildaMinus, DtildaPlus,chi;
+    
+    cells=propArray.size(); //get number of cells
+    groups=propArray[0].size(); //get number of groups
+    
+    std::vector<std::vector<double>> ret(cells*groups,std::vector<double>(cells*groups,0));
+
+    for(int i=0; i<cells;i++) { //iterate over all mesh
+        for(int j=0;j<groups; j++) { //iterate over all groups
+            cellTarget=i*groups+j; //get proper row for this flux
+            
+            chi=propArray[i][j][4]; //get the chi emission for this group
+            //
+             /***************************Fill values****************************/
+            //
+            for(int k=0;k<groups;k++) { //iterate over all groups again. Find all fission sources
+                ret[cellTarget][i*groups+k]=chi*propArray[i][k][5]; //chi*nu*Sigma_f,g
+            }
+            
+            //Handle inscatter now from groups above and below
+            if(j>0) { //if not group one look for downscatter
+                ret[cellTarget][cellTarget-1]+=propArray[i][j-1][3];
+            }
+            if(j<groups-1) { //if not the lowest thermal group upscatter
+                ret[cellTarget][cellTarget+1]+=propArray[i][j+1][2];
+
+            }
+
+        }
+    }
+    return ret;
+}
+/**
+ * Prints out the structure of the 2D array to stdout
+ */
+void printArray(const std::vector<std::vector<double>> &inspectee) {
+    for(std::vector<double> row: inspectee) {
+        std::cout<<'[';
+        for(double cell: row) {
+            if(cell==0)
+                std::cout<<"-";
+            else
+                std::cout<<"1";
+        }
+        std::cout<<']'<<std::endl;
     }
 }

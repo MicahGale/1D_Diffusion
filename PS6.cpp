@@ -6,11 +6,12 @@
 #include <iostream>
 #include "diffusion.h"
 
+using namespace Eigen;
 std::vector<std::vector<double>> getMaterials(int); 
+void Q1();
 
 int main () {
-    std::vector<double> test{1,2,3,4,5};
-    std::cout<<sumArray(test);
+    Q1();
     return 0;
 
 }
@@ -57,5 +58,22 @@ std::vector<std::vector<double>> getMaterials(int requested) {
             break;
 
     }
+    return ret;
+
+}
+
+void Q1() {
+    std::vector<std::vector<std::vector<double>>> cellProp, meshProp;
+    MatrixXd H, F;
+    std::vector<int> pinWidth;
+    double delta;
+
+    cellProp={getMaterials(1)}; //build the cell properties
+    pinWidth={60};
+    delta=5.0;
+    meshProp=buildPropArray(cellProp,pinWidth);
+    H=generateH(meshProp,delta,true,true);
+    F=generateF(meshProp,delta); 
+    printArray(F);
 
 }

@@ -2,7 +2,19 @@
  * The library for a multi-group 1D diffusion solver
  */
 #include <vector>
+#include <Eigen/Dense>
 
+class eigenSolut {
+    public:
+        double K;
+        Eigen::MatrixXd flux;
+
+        eigenSolut(double K, const Eigen::MatrixXd &flux) {
+            this->K=K;
+            this->flux=flux;
+        }
+
+};
 /**
  * Sums all of the elements of a 1D array
  *
@@ -77,8 +89,7 @@ std::vector<std::vector<std::vector<double>>>
  *@return the H matrix assumes first dimension is row. 
  */
 
-std::vector<std::vector<double>> 
-generateH (std::vector<std::vector<std::vector<double>>> propArray, 
+Eigen::MatrixXd generateH (std::vector<std::vector<std::vector<double>>> propArray, 
         double delta, bool leftBound, bool rightBound) {
     
     int cells, groups,cellTarget;
@@ -87,8 +98,7 @@ generateH (std::vector<std::vector<std::vector<double>>> propArray,
     cells=propArray.size(); //gets the number mesh cells
     groups=propArray[0].size(); //gets the number of groups in model
 
-    std::vector<std::vector<double>> ret(groups*cells,std::vector<double>(
-                groups*cells,0)); //creates square return matrix
+    Eigen::MatrixXd ret(groups*cells, groups*cells); //creates square return matrix
     for(int i=0; i<cells; i++) { //iterate over all mesh cells
         for(int j=0;j<groups;j++) { //iterate over all groups
             if(i>0) { //if D-tilda-minus exists find it
@@ -114,20 +124,21 @@ generateH (std::vector<std::vector<std::vector<double>>> propArray,
             //
             if(i>0) { //fill in the left difusion
                 //same energy group 1 cell to the left though
-                ret[cellTarget][(i-1)*groups+j]= -DtildaMinus;
+                ret(cellTarget,(i-1)*groups+j)= -DtildaMinus;
             } 
 
             if(i<cells -1 )  {// fill in the right difusion. 
-                ret[cellTarget][(i+1)*groups+j]= -DtildaPlus;
+                ret(cellTarget,(i+1)*groups+j)= -DtildaPlus;
             }
             sigmaRemoval=propArray[i][j][1]+propArray[i][j][2]+propArray[i][j][3];
 
             //fill in flux removal term
-            ret[cellTarget][cellTarget]=sigmaRemoval*delta+DtildaMinus+DtildaPlus;
+            ret(cellTarget,cellTarget)=sigmaRemoval*delta+DtildaMinus+DtildaPlus;
         }
     }
     return ret;
 }
+
 /**
  *Generates the fission, F, matrix.
  *
@@ -135,8 +146,8 @@ generateH (std::vector<std::vector<std::vector<double>>> propArray,
  *
  */
 
-std::vector<std::vector<double>> 
-	generateF(std::vector<std::vector<std::vector<double>>> propArray, double delta) {
+Eigen::MatrixXd generateF(std::vector<std::vector<std::vector<double>>> &propArray, 
+              double delta) {
     
     int cells, groups,cellTarget;
     double DtildaMinus, DtildaPlus,chi;
@@ -144,7 +155,7 @@ std::vector<std::vector<double>>
     cells=propArray.size(); //get number of cells
     groups=propArray[0].size(); //get number of groups
     
-    std::vector<std::vector<double>> ret(cells*groups,std::vector<double>(cells*groups,0));
+    Eigen::MatrixXd ret(cells*groups,cells*groups);
 
     for(int i=0; i<cells;i++) { //iterate over all mesh
         for(int j=0;j<groups; j++) { //iterate over all groups
@@ -155,15 +166,15 @@ std::vector<std::vector<double>>
              /***************************Fill values****************************/
             //
             for(int k=0;k<groups;k++) { //iterate over all groups again. Find all fission sources
-                ret[cellTarget][i*groups+k]=chi*propArray[i][k][5]; //chi*nu*Sigma_f,g
+                ret(cellTarget,i*groups+k)=chi*propArray[i][k][5]; //chi*nu*Sigma_f,g
             }
             
             //Handle inscatter now from groups above and below
             if(j>0) { //if not group one look for downscatter
-                ret[cellTarget][cellTarget-1]+=propArray[i][j-1][3];
+                ret(cellTarget,cellTarget-1)+=propArray[i][j-1][3];
             }
             if(j<groups-1) { //if not the lowest thermal group upscatter
-                ret[cellTarget][cellTarget+1]+=propArray[i][j+1][2];
+                ret(cellTarget,cellTarget+1)+=propArray[i][j+1][2];
 
             }
 
@@ -174,11 +185,11 @@ std::vector<std::vector<double>>
 /**
  * Prints out the structure of the 2D array to stdout
  */
-void printArray(const std::vector<std::vector<double>> &inspectee) {
-    for(std::vector<double> row: inspectee) {
+void printArray(const Eigen::MatrixXd &inspectee) {
+    for(int i=0; i<inspectee.rows();i++) {
         std::cout<<'[';
-        for(double cell: row) {
-            if(cell==0)
+        for(int j=0; j<inspectee.cols();j++) {
+            if(inspectee(i,j)==0)
                 std::cout<<"-";
             else
                 std::cout<<"1";

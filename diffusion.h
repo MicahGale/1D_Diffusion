@@ -9,12 +9,14 @@ class eigenSolut {
         double K;
         Eigen::MatrixXd flux;
 
-        eigenSolut(double K, const Eigen::MatrixXd &flux) {
+        eigenSolut(double K, Eigen::MatrixXd flux) {
             this->K=K;
             this->flux=flux;
         }
 
 };
+
+void printArray(Eigen::MatrixXd);
 /**
  * Sums all of the elements of a 1D array
  *
@@ -181,6 +183,42 @@ Eigen::MatrixXd generateF(std::vector<std::vector<std::vector<double>>> &propArr
         }
     }
     return ret;
+}
+
+eigenSolut solveEigenProblem(const Eigen::MatrixXd &H, const Eigen::MatrixXd &F) {
+    Eigen::MatrixXd flux,histFlux, source,histSource;
+    Eigen::ColPivHouseholderQR<Eigen::MatrixXd> decomp;
+    double K,histK;
+    bool converged;
+    int loopCount;
+    K=1.0;
+
+    //initial guesss. Probably really wrong
+    flux=Eigen::MatrixXd(H.rows(),1);
+    flux.setOnes(); //filll it with 1s
+    converged=false; 
+    decomp=Eigen::ColPivHouseholderQR<Eigen::MatrixXd>(H); //decompose the problem
+    loopCount=0;
+    while(!converged&&loopCount<=100) {
+        histSource=source;   //store the old fission source
+        source=(1/K)*F*flux; //update the problem source term
+        histFlux=flux;   //update old flux
+
+        flux=decomp.solve(source); //solve H\phi=1/K(F\phi)
+        
+        K*=flux.norm()/histFlux.norm();
+
+        flux=flux/flux.mean(); //renormalize
+
+        std::cout<<K<<std::endl;
+        //converged=true;
+        loopCount++;
+    }
+    if(loopCount>=100) {
+        std::cerr<<"Max loop executions reached"<<std::endl;
+    }
+
+    return eigenSolut(K,flux);
 }
 /**
  * Prints out the structure of the 2D array to stdout

@@ -2,6 +2,7 @@
  * The library for a multi-group 1D diffusion solver
  */
 #include <vector>
+#include <cmath>
 #include <Eigen/Dense>
 
 class eigenSolut {
@@ -17,6 +18,7 @@ class eigenSolut {
 };
 
 void printArray(Eigen::MatrixXd);
+bool checkConverg(const Eigen::MatrixXd&, const Eigen::MatrixXd&, double);
 /**
  * Sums all of the elements of a 1D array
  *
@@ -184,7 +186,17 @@ Eigen::MatrixXd generateF(std::vector<std::vector<std::vector<double>>> &propArr
     }
     return ret;
 }
-
+/**
+ *Solves the problem for the primary eigen solution. 
+ *
+ * Returns the K value and the normalized flux. Flux is "normalized"
+ * by dividing it by the average.
+ *
+ * @param H the H matrix
+ * @param F the fision matrix
+ * @return an object with K and the flux
+ *
+ */
 eigenSolut solveEigenProblem(const Eigen::MatrixXd &H, const Eigen::MatrixXd &F) {
     Eigen::MatrixXd flux,histFlux, source,histSource;
     Eigen::ColPivHouseholderQR<Eigen::MatrixXd> decomp;
@@ -198,6 +210,7 @@ eigenSolut solveEigenProblem(const Eigen::MatrixXd &H, const Eigen::MatrixXd &F)
     flux.setOnes(); //filll it with 1s
     converged=false; 
     decomp=Eigen::ColPivHouseholderQR<Eigen::MatrixXd>(H); //decompose the problem
+    source=F;
     loopCount=0;
     while(!converged&&loopCount<=100) {
         histSource=source;   //store the old fission source
@@ -211,7 +224,7 @@ eigenSolut solveEigenProblem(const Eigen::MatrixXd &H, const Eigen::MatrixXd &F)
         flux=flux/flux.mean(); //renormalize
 
         std::cout<<K<<std::endl;
-        //converged=true;
+        converged=checkConverg(source,histSource,1e-7);
         loopCount++;
     }
     if(loopCount>=100) {
@@ -219,6 +232,29 @@ eigenSolut solveEigenProblem(const Eigen::MatrixXd &H, const Eigen::MatrixXd &F)
     }
 
     return eigenSolut(K,flux);
+}
+/**
+ *Checks convergence of the fission source.
+ *
+ * Checks that every term is converged within the tolerance
+ *
+ * @param source the fission source matrix
+ * @param history the previous iteration's source matrix
+ * @param tolerance the fraction of variation that is allowed
+ * @return true iff all cells are converged
+ */
+
+bool checkConverg(const Eigen::MatrixXd &source, const Eigen::MatrixXd &hist, double tolerance) {
+    
+    for(int i =0; i<source.rows();i++) { //iterate over all rows
+        for(int j=0;j<source.cols();j++) { //over all cells
+            if(tolerance*source(i,j)>abs(source(i,j)-hist(i,j))) {
+                return false; //if not converged give up
+            }
+        }
+    }
+
+    return true;
 }
 /**
  * Prints out the structure of the 2D array to stdout

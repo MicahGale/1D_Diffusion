@@ -14,11 +14,11 @@ class eigenSolut {
             this->K=K;
             this->flux=flux;
         }
-
 };
 
 void printArray(const Eigen::MatrixXd&);
-bool checkConverg(const Eigen::MatrixXd&, const Eigen::MatrixXd&, double);
+bool checkConverg(const Eigen::MatrixXd&,  const Eigen::MatrixXd&,
+        const Eigen::MatrixXd&, const Eigen::MatrixXd&, double,int);
 /**
  * Sums all of the elements of a 1D array
  *
@@ -197,7 +197,7 @@ Eigen::MatrixXd generateF(std::vector<std::vector<std::vector<double>>> &propArr
  * @return an object with K and the flux
  *
  */
-eigenSolut solveEigenProblem(const Eigen::MatrixXd &H, const Eigen::MatrixXd &F) {
+eigenSolut solveEigenProblem(const Eigen::MatrixXd &H, const Eigen::MatrixXd &F, int groups) {
     Eigen::MatrixXd flux,histFlux, source,histSource;
     Eigen::ColPivHouseholderQR<Eigen::MatrixXd> decomp;
     double K,histK;
@@ -225,7 +225,7 @@ eigenSolut solveEigenProblem(const Eigen::MatrixXd &H, const Eigen::MatrixXd &F)
         flux=flux/flux.mean(); //renormalize
 
         std::cout<<"Loop:"<<loopCount<<" K: "<<K<<std::endl;
-        converged=checkConverg(source,histSource,1e-7);
+        converged=checkConverg(flux, histFlux, source,histSource,1e-7,groups);
         loopCount++;
     }
     if(loopCount>=1000) {
@@ -239,22 +239,45 @@ eigenSolut solveEigenProblem(const Eigen::MatrixXd &H, const Eigen::MatrixXd &F)
  *
  * Checks that every term is converged within the tolerance
  *
+ * @param flux the current flux
+ * @param fluxHist the historic flux
  * @param source the fission source matrix
- * @param history the previous iteration's source matrix
+ * @param histSource the previous iteration's source matrix
  * @param tolerance the fraction of variation that is allowed
- * @return true iff all cells are converged
+ * @return true iff all cells are converged by RMS of flux and fission source
  */
 
-bool checkConverg(const Eigen::MatrixXd &source, const Eigen::MatrixXd &hist, double tolerance) {
+bool checkConverg(const Eigen::MatrixXd &flux, const Eigen::MatrixXd &histFlux,
+        const Eigen::MatrixXd &source, const Eigen::MatrixXd &histSource, 
+        double tolerance,int groups) {
+    double fluxRMS, sourceRMS,fission,histFission;
+
     for(int i =0; i<source.rows();i++) { //iterate over all rows
         for(int j=0;j<source.cols();j++) { //over all cells
-            if(std::abs(tolerance*source(i,j))<std::abs(source(i,j)-hist(i,j))  ) {
-                return false; //if not converged give up
+            if(flux(i,j)!=0) { //avoid division by zero
+                fluxRMS+=std::pow((flux(i,j)-histFlux(i,j))/flux(i,j),2); //add to RMS
+            }
+            if(i%groups==0) { //if first energy group sum the fission source
+               //it is poluted with cross-group scattering, but meh close
+               //enough
+               fission=0; 
+               histFission=0;
+               for(int k=0;k<groups;k++) {
+                   fission+=source(i+k,j); //integrate "fission term"
+                   histFission+=histSource(i+k,j);
+               }
+               if(fission!=0) //avoid divide by 0
+                    sourceRMS+=std::pow((fission-histFission)/fission,2);
             }
         }
     }
-
-    return true;
+        //test the convergence condition. Because RMS is soooo fancy.
+    if(std::sqrt(fluxRMS/source.rows())<100*tolerance&&
+            std::sqrt(sourceRMS/(source.rows()/groups))<tolerance) {
+        return true;
+    } else {
+        return false;
+    }
 }
 /**
  * Prints out the structure of the 2D array to stdout

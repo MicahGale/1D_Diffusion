@@ -74,6 +74,6 @@ void Q1() {
     meshProp=buildPropArray(cellProp,pinWidth);
     H=generateH(meshProp,delta,true,true);
     F=generateF(meshProp,delta); 
-    solveEigenProblem(H,F);
+    solveEigenProblem(H,F,2);
 
 }

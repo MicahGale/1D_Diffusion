@@ -62,7 +62,7 @@ std::vector<std::vector<double>> getMaterials(int requested) {
 
 }
 
-void Q1() {
+eigenSolut Q1() {
     std::vector<std::vector<std::vector<double>>> cellProp, meshProp;
     MatrixXd H, F;
     std::vector<int> pinWidth;
@@ -74,6 +74,68 @@ void Q1() {
     meshProp=buildPropArray(cellProp,pinWidth);
     H=generateH(meshProp,delta,true,true);
     F=generateF(meshProp,delta); 
-    solveEigenProblem(H,F,2);
+    return solveEigenProblem(H,F,2);
 
 }
+eigenSolut Q2() {
+    std::vector<std::vector<std::vector<double>>> cellProp, meshProp;
+    MatrixXd H, F;
+    std::vector<int> pinWidth;
+    double delta;
+
+    cellProp={getMaterrials(5),getMaterials(2), getMaterials(5)};
+    pinWidth={5,50,5};
+    delta=5.0;
+    meshProp=buildPropArray(cellProp,pinWidth);
+    H=generateH(meshProp,delta,true,true);
+    F=generateF(meshProp,delta);
+    return solveEigenProblem(H,F,2);
+}
+
+eigenSolut Q3() {
+    std::vector<std::vector<std::vector<double>>> cellProp, meshProp;
+    MatrixXd H, F;
+    std::vector<int> pinWidth;
+    double delta;
+
+    cellProp={getMaterrials(5),getMaterials(2), getMaterials(5)};
+    pinWidth={25,250,25};
+    delta=1.0;
+    meshProp=buildPropArray(cellProp,pinWidth);
+    H=generateH(meshProp,delta,true,true);
+    F=generateF(meshProp,delta);
+    return solveEigenProblem(H,F,2);
+}
+
+eigenSolut Q4() {
+    std::vector<std::vector<std::vector<double>>> cellProp, meshProp;
+    MatrixXd H, F;
+    std::vector<int> pinWidth;
+    double delta;
+
+    cellProp={getMaterrials(5),getMaterials(4), getMaterials(3), getMaterials(4),
+		getMaterials(5)};
+    pinWidth={25,15,220,15,25};
+    delta=1.0;
+    meshProp=buildPropArray(cellProp,pinWidth);
+    H=generateH(meshProp,delta,true,true);
+    F=generateF(meshProp,delta);
+    return solveEigenProblem(H,F,2);
+}
+
+eigenSolut Q5(int baffleThick) {
+    std::vector<std::vector<std::vector<double>>> cellProp, meshProp;
+    MatrixXd H, F;
+    std::vector<int> pinWidth;
+    double delta;
+
+    cellProp={getMaterrials(7),getMaterials(6), getMaterials(4),getMaterials(3),
+    getMaterials(4),getMaterials(6),getMaterials(7)};
+    pinWidth={23,baffleThick,15,220,15,baffleThick,23};
+    delta=1.0;
+    meshProp=buildPropArray(cellProp,pinWidth);
+    H=generateH(meshProp,delta,true,true);
+    F=generateF(meshProp,delta);
+    return solveEigenProblem(H,F,2);
+}
+

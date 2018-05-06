@@ -8,10 +8,12 @@
 class eigenSolut {
     public:
         double K;
+        int loopCount;
         Eigen::MatrixXd flux;
 
-        eigenSolut(double K, Eigen::MatrixXd flux) {
+        eigenSolut(double K, int loop, Eigen::MatrixXd flux) {
             this->K=K;
+            this->loopCount=loop;
             this->flux=flux;
         }
 };
@@ -232,7 +234,7 @@ eigenSolut solveEigenProblem(const Eigen::MatrixXd &H, const Eigen::MatrixXd &F,
         std::cerr<<"Max loop executions reached"<<std::endl;
     }
 
-    return eigenSolut(K,flux);
+    return eigenSolut(K,loopCount, flux);
 }
 /**
  *Checks convergence of the fission source.

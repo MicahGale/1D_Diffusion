@@ -17,7 +17,7 @@ class eigenSolut {
 
 };
 
-void printArray(Eigen::MatrixXd);
+void printArray(const Eigen::MatrixXd&);
 bool checkConverg(const Eigen::MatrixXd&, const Eigen::MatrixXd&, double);
 /**
  * Sums all of the elements of a 1D array
@@ -210,9 +210,10 @@ eigenSolut solveEigenProblem(const Eigen::MatrixXd &H, const Eigen::MatrixXd &F)
     flux.setOnes(); //filll it with 1s
     converged=false; 
     decomp=Eigen::ColPivHouseholderQR<Eigen::MatrixXd>(H); //decompose the problem
-    source=F;
+    source=flux;
+    source.setZero();
     loopCount=0;
-    while(!converged&&loopCount<=100) {
+    while(!converged&&loopCount<=1000) {
         histSource=source;   //store the old fission source
         source=(1/K)*F*flux; //update the problem source term
         histFlux=flux;   //update old flux
@@ -223,11 +224,11 @@ eigenSolut solveEigenProblem(const Eigen::MatrixXd &H, const Eigen::MatrixXd &F)
 
         flux=flux/flux.mean(); //renormalize
 
-        std::cout<<K<<std::endl;
+        std::cout<<"Loop:"<<loopCount<<" K: "<<K<<std::endl;
         converged=checkConverg(source,histSource,1e-7);
         loopCount++;
     }
-    if(loopCount>=100) {
+    if(loopCount>=1000) {
         std::cerr<<"Max loop executions reached"<<std::endl;
     }
 
@@ -245,10 +246,9 @@ eigenSolut solveEigenProblem(const Eigen::MatrixXd &H, const Eigen::MatrixXd &F)
  */
 
 bool checkConverg(const Eigen::MatrixXd &source, const Eigen::MatrixXd &hist, double tolerance) {
-    
     for(int i =0; i<source.rows();i++) { //iterate over all rows
         for(int j=0;j<source.cols();j++) { //over all cells
-            if(tolerance*source(i,j)>abs(source(i,j)-hist(i,j))) {
+            if(std::abs(tolerance*source(i,j))<std::abs(source(i,j)-hist(i,j))  ) {
                 return false; //if not converged give up
             }
         }

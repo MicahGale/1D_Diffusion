@@ -5,13 +5,38 @@
 
 #include <iostream>
 #include "diffusion.h"
+#include <fstream>
 
 using namespace Eigen;
 std::vector<std::vector<double>> getMaterials(int); 
-void Q1();
+eigenSolut Q1();
+eigenSolut Q2();
+eigenSolut Q3();
+eigenSolut Q4();
+eigenSolut Q5();
+void parseResults(const eigenSolut&,std::ofstream&);
 
+//runs all problems and creates the table
+void partA() {
+    std::ofstream csv;
+
+    csv.open("PartA.csv");
+    csv<<"Problem,$K_{eff}$,Peak Fission, Peak fission Location, Number of Iterations"<<std::endl;
+    csv<<"1,";
+    parseResults(Q1(),csv);
+    csv.close();
+
+}
+
+void parseResults(const eigenSolut& answer, std::ofstream& csv) {
+    //dump the K_eff term right away
+    csv<<answer.K<<",";
+
+    csv<<answer.loopCount<<std::endl;
+
+}
 int main () {
-    Q1();
+    partA();
     return 0;
 
 }
@@ -83,7 +108,7 @@ eigenSolut Q2() {
     std::vector<int> pinWidth;
     double delta;
 
-    cellProp={getMaterrials(5),getMaterials(2), getMaterials(5)};
+    cellProp={getMaterials(5),getMaterials(2), getMaterials(5)};
     pinWidth={5,50,5};
     delta=5.0;
     meshProp=buildPropArray(cellProp,pinWidth);
@@ -98,7 +123,7 @@ eigenSolut Q3() {
     std::vector<int> pinWidth;
     double delta;
 
-    cellProp={getMaterrials(5),getMaterials(2), getMaterials(5)};
+    cellProp={getMaterials(5),getMaterials(2), getMaterials(5)};
     pinWidth={25,250,25};
     delta=1.0;
     meshProp=buildPropArray(cellProp,pinWidth);
@@ -113,7 +138,7 @@ eigenSolut Q4() {
     std::vector<int> pinWidth;
     double delta;
 
-    cellProp={getMaterrials(5),getMaterials(4), getMaterials(3), getMaterials(4),
+    cellProp={getMaterials(5),getMaterials(4), getMaterials(3), getMaterials(4),
 		getMaterials(5)};
     pinWidth={25,15,220,15,25};
     delta=1.0;
@@ -129,7 +154,7 @@ eigenSolut Q5(int baffleThick) {
     std::vector<int> pinWidth;
     double delta;
 
-    cellProp={getMaterrials(7),getMaterials(6), getMaterials(4),getMaterials(3),
+    cellProp={getMaterials(7),getMaterials(6), getMaterials(4),getMaterials(3),
     getMaterials(4),getMaterials(6),getMaterials(7)};
     pinWidth={23,baffleThick,15,220,15,baffleThick,23};
     delta=1.0;

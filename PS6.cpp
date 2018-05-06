@@ -13,8 +13,8 @@ eigenSolut Q1();
 eigenSolut Q2();
 eigenSolut Q3();
 eigenSolut Q4();
-eigenSolut Q5();
-void parseResults(const eigenSolut&,std::ofstream&);
+eigenSolut Q5(int);
+void parseResults(const eigenSolut&,std::ofstream&,double);
 
 //runs all problems and creates the table
 void partA() {
@@ -23,14 +23,35 @@ void partA() {
     csv.open("PartA.csv");
     csv<<"Problem,$K_{eff}$,Peak Fission, Peak fission Location, Number of Iterations"<<std::endl;
     csv<<"1,";
-    parseResults(Q1(),csv);
+    parseResults(Q1(),csv,5.0);
+    parseResults(Q2(),csv,5.0);
+    parseResults(Q3(),csv,1.0);
+    parseResults(Q4(),csv,1.0);
+    parseResults(Q5(2),csv,1.0);
     csv.close();
 
 }
 
-void parseResults(const eigenSolut& answer, std::ofstream& csv) {
+void parseResults(const eigenSolut& answer, std::ofstream& csv,double delta) {
+    MatrixXd fission,source;
+    MatrixXd::Index maxRow,maxCol;
+    double maxVal,distance;
+    int i;
+
+    fission=MatrixXd((answer.flux.rows()/2),1);
+    source=answer.fission;
     //dump the K_eff term right away
     csv<<answer.K<<",";
+    
+    for(int i=0;i<source.rows();i+=2) { //iterate over all of the fast groups
+        fission(i/2,0)=source(i,0);//pull out only the fission sources
+    }
+    fission=fission/fission.mean(); //normalize by the average
+    maxVal=fission.maxCoeff(&maxRow, &maxCol);
+    csv<<maxVal<<","; //prints out the maximum fission peak
+    distance=delta*(maxRow-(double)(fission.rows()/2.0)); //calculate distance from center
+    
+    csv<<distance<<","; //print that stuff
 
     csv<<answer.loopCount<<std::endl;
 

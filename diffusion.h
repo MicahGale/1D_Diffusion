@@ -10,11 +10,13 @@ class eigenSolut {
         double K;
         int loopCount;
         Eigen::MatrixXd flux;
+        Eigen::MatrixXd fission;
 
-        eigenSolut(double K, int loop, Eigen::MatrixXd flux) {
+        eigenSolut(double K, int loop, Eigen::MatrixXd flux,Eigen::MatrixXd fission) {
             this->K=K;
             this->loopCount=loop;
             this->flux=flux;
+            this->fission=fission;
         }
 };
 
@@ -234,7 +236,7 @@ eigenSolut solveEigenProblem(const Eigen::MatrixXd &H, const Eigen::MatrixXd &F,
         std::cerr<<"Max loop executions reached"<<std::endl;
     }
 
-    return eigenSolut(K,loopCount, flux);
+    return eigenSolut(K,loopCount, flux,source);
 }
 /**
  *Checks convergence of the fission source.
@@ -262,12 +264,8 @@ bool checkConverg(const Eigen::MatrixXd &flux, const Eigen::MatrixXd &histFlux,
             if(i%groups==0) { //if first energy group sum the fission source
                //it is poluted with cross-group scattering, but meh close
                //enough
-               fission=0; 
-               histFission=0;
-               for(int k=0;k<groups;k++) {
-                   fission+=source(i+k,j); //integrate "fission term"
-                   histFission+=histSource(i+k,j);
-               }
+               fission=source(i,j); 
+               histFission=histSource(i,j);
                if(fission!=0) //avoid divide by 0
                     sourceRMS+=std::pow((fission-histFission)/fission,2);
             }
